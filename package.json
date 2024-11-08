@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  },
+  "name": "invaders",
+  "version": "0.0.69",
+  "description": "a small game made with three.js",
+  "main": "scripty.js",
+  "scripts": {
+    "start": "npx vite"
+  },
+  "author": "C. Masta",
+  "license": "UNLICENSED"
+}

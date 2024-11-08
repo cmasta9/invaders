@@ -1,0 +1,32 @@
+body{
+    overflow: hidden;
+    position: fixed;
+    margin:auto;
+    height:100%;
+}
+
+#canv{
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.HUD{
+    position:absolute;
+    display: block;
+    width: 30%;
+    text-align: left;
+    color: white;
+    font-size: 42px;
+    text-shadow: 2px 2px #000000;
+}
+
+#points{
+    left: 20px;
+    top: 69px;
+}
+
+#HP{
+    left: 20px;
+    top: 20px;
+}
