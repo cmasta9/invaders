@@ -60,6 +60,8 @@ const bulletRad = 0.1;
 const ufoHeight = 5;
 const numSpawners = 11;
 
+let touchX = '';
+
 let pause = false;
 let mouseDown = false;
 let clicked = false;
@@ -249,12 +251,6 @@ function doubleTap(){
 
 window.addEventListener('keydown', (k)=>{
     //console.log(`${k.key} down`);
-    if(k.key == 'ArrowUp' && Math.abs(input[1]) < maxInput){
-        input[1] += 1;
-    }
-    if(k.key == 'ArrowDown' && Math.abs(input[1]) < maxInput){
-        input[1] -= 1;
-    }
     if(k.key == 'ArrowRight' && Math.abs(input[0]) < maxInput){
         input[0] += 1;
     }
@@ -265,9 +261,6 @@ window.addEventListener('keydown', (k)=>{
 
 window.addEventListener('keyup',(k)=>{
     console.log(`${k.key} up`);
-    if(k.key == 'ArrowUp' || k.key == 'ArrowDown'){
-        input[1] = 0;
-    }
     if(k.key == 'ArrowLeft' || k.key == 'ArrowRight'){
         input[0] = 0;
     }
@@ -277,11 +270,33 @@ window.addEventListener('mousedown',()=>{
     mouseDown = true;
 });
 
+window.addEventListener('touchstart',(e)=>{
+    mouseDown = true;
+    touchX = e.touchX;
+});
+
 window.addEventListener('mouseup',()=>{
     mouseDown = false;
 });
 
+window.addEventListener('touchend',()=>{
+    mouseDown = false;
+});
+
 window.addEventListener('click',()=>{
+    if(tapCounter){
+        doubleTap();
+        clearTimeout(tapCounter);
+        tapCounter = undefined;
+    }else{
+        tapCounter = setTimeout(()=>{
+            clearTimeout(tapCounter);
+            tapCounter = undefined;
+        },doubleTapThresh*1000);
+    }
+});
+
+window.addEventListener('touchstart',()=>{
     if(tapCounter){
         doubleTap();
         clearTimeout(tapCounter);
@@ -300,6 +315,14 @@ window.addEventListener('mousemove',(e)=>{
         //cam.rotation.x += e.movementY * spd;
     }
 });
+
+window.addEventListener('touchmove',(e)=>{
+    if(mouseDown){
+        cam.rotation.y += (touchX-e.touchX) * spd;
+        touchX = e.touchX;
+        //cam.rotation.x += e.movementY * spd;
+    }
+})
 
 function spawnSpawners(n){
     for(let i = 0; i < n; i++){
