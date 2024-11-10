@@ -319,8 +319,8 @@ window.addEventListener('mousemove',(e)=>{
 
 window.addEventListener('touchmove',(e)=>{
     if(mouseDown){
-        cam.rotation.y += (touchX-e.touchX) * spd;
-        touchX = e.touchX;
+        cam.rotation.y += (touchX-Number(e.touchX)) * spd;
+        touchX = Number(e.touchX);
     }
 })
 
