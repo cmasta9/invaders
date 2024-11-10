@@ -81,7 +81,8 @@ const aliens = [];
 const mixers = [];
 const spawners = [];
 const scenery = [];
-const clocks = [];
+
+let dTime = 0;
 
 const box = new THREE.BoxGeometry(1,1,1);
 const ball = new THREE.SphereGeometry(bulletRad,4,4);
@@ -142,7 +143,8 @@ function anim(){
                 moveBalls();
             }
             if(aliens.length > 0){
-                moveAliens();
+                moveAliens((Number(Date.now())-dTime)/1000);
+                dTime = Number(Date.now());
             }
             if(ufoObj){
                 moveUFO();
@@ -203,7 +205,7 @@ function moveBalls(){
     }
 }
 
-function moveAliens(){
+function moveAliens(dt){
     for(let i = 0; i < aliens.length; i++){
         if(aliens[i].position.y > ground.position.y + alienSize.y/2){
             aliens[i].position.y -= fallSpd;
@@ -212,7 +214,7 @@ function moveAliens(){
                 const d = dir(aliens[i].position,cam.position);
                 aliens[i].position.x += d.x * alienSpd;
                 aliens[i].position.z += d.z * alienSpd;
-                mixers[i].update(clocks[i].getDelta()*mixers[i].timeScale);
+                mixers[i].update(dt);
             }
             else{
                 damage();
@@ -272,7 +274,7 @@ window.addEventListener('mousedown',()=>{
 
 window.addEventListener('touchstart',(e)=>{
     mouseDown = true;
-    touchX = e.touchX;
+    touchX = Number(e.touchX);
 });
 
 window.addEventListener('mouseup',()=>{
@@ -312,7 +314,6 @@ window.addEventListener('touchstart',()=>{
 window.addEventListener('mousemove',(e)=>{
     if(mouseDown){
         cam.rotation.y += e.movementX * spd;
-        //cam.rotation.x += e.movementY * spd;
     }
 });
 
@@ -320,7 +321,6 @@ window.addEventListener('touchmove',(e)=>{
     if(mouseDown){
         cam.rotation.y += (touchX-e.touchX) * spd;
         touchX = e.touchX;
-        //cam.rotation.x += e.movementY * spd;
     }
 })
 
@@ -360,7 +360,6 @@ function spawnAlien(){
         const action = mixer.clipAction(o.animations[0]);
         action.play();
         mixers.push(mixer);
-        clocks.push(new THREE.Clock());
     });
 }
 
