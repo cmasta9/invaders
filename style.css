@@ -30,3 +30,10 @@ body{
     left: 20px;
     top: 20px;
 }
+
+#center{
+    left:40%;
+    top:40%;
+    text-align: center;
+    font-size: 69px;
+}

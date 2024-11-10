@@ -8,6 +8,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const alienImg = './graphics/alien.png';
 const bgImg = './graphics/galaxyLoop.png';
+const alienMod = './graphics/alien2.glb';
 const pumpkin = './graphics/pumpkin.glb';
 const jackO = './graphics/jackO.glb';
 const corn = './graphics/cornStalk.glb';
@@ -15,8 +16,11 @@ const ufo = './graphics/ufo.glb';
 
 const pointsHUD = document.getElementById('points');
 const hpHUD = document.getElementById('HP');
+const cenText = document.getElementById('center');
 
-const stageDim = 80;
+cenText.innerText = 'LOADING...';
+
+const stageDim = 54;
 const scene = new THREE.Scene();
 const cam = new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,stageDim/2+1);
 const tLoader = new THREE.TextureLoader();
@@ -33,6 +37,7 @@ rgbPass.uniforms['amount'].value = 0.02;
 comp.addPass(new OutputPass());
 rend.setSize(window.innerWidth,window.innerHeight);
 comp.setSize(window.innerWidth,window.innerHeight);
+const ratio = rend.getPixelRatio();
 document.body.appendChild(rend.domElement);
 
 const maxInput = 3;
@@ -44,6 +49,8 @@ let alienSpd = 0.01;
 let fallSpd = 0.05;
 let ufoSpd = 0.19;
 let ufoSleepTime = 2;
+let alienScale = 0.5;
+let damgDist = 0.8;
 
 const camHeight = 0.54;
 const spawnDist = stageDim*2/5;
@@ -63,8 +70,10 @@ let ufoSleep = null;
 
 const balls = [];
 const aliens = [];
+const mixers = [];
 const spawners = [];
 const scenery = [];
+const clocks = [];
 
 const box = new THREE.BoxGeometry(1,1,1);
 const ball = new THREE.SphereGeometry(bulletRad,4,4);
@@ -91,6 +100,7 @@ ground.position.y = 0;
 scene.add(ground);
 scene.add(light);
 scene.add(sky);
+scene.fog = new THREE.Fog(0xaaaaaa,1,stageDim);
 
 cam.position.y = ground.position.y + camHeight;
 
@@ -102,18 +112,18 @@ gLoader.load(ufo,function(o){
     ufoObj.position.x = spawnDist;
     ufoObj.position.z = 0;
     scene.add(ufoObj);
-});
+},()=>{cenText.innerText = 'LOADING... ufo done';});
 
 console.log(ufoObj);
 
 spawnSpawners(numSpawners);
 setDecoration(pumpkin,42,[0.22,0.22,0.22],0.46);
 setDecoration(jackO,12,[0.22,0.22,0.22],0.46);
-setDecoration(corn,1111,[1,1.2,1],0.2);
+setDecoration(corn,1111,[1,1.2,1],0.2,true);
+const alienSize = new THREE.Vector3();
 chooseSpawn();
 comp.render();
 rend.setAnimationLoop(anim);
-const alienSize = new THREE.Vector3();
 
 function anim(){
 
@@ -156,9 +166,7 @@ function moveUFO(){
 
 function moveBalls(){
     for(let i = 0; i < balls.length; i++){
-        //console.log(balls[i]);
         const d = dir(balls[i].position,cam.position);
-        //console.log(d);
         balls[i].position.x -= d.x * shootSpd;
         balls[i].position.y -= d.y * shootSpd;
         balls[i].position.z -= d.z * shootSpd;
@@ -177,6 +185,8 @@ function moveBalls(){
                         scene.remove(aliens[a]);
                         balls.splice(i,1);
                         aliens.splice(a,1);
+                        mixers.splice(a,1);
+                        clocks.splice(a,1);
                         points++;
                         //console.log(`hit! ${points}`);
                         pointsHUD.innerText = `Points: ${points}`;
@@ -192,11 +202,11 @@ function moveAliens(){
         if(aliens[i].position.y > ground.position.y + alienSize.y/2){
             aliens[i].position.y -= fallSpd;
         }else{
-            if(!near(aliens[i].position,cam.position,1)){
+            if(!near(aliens[i].position,cam.position,damgDist)){
                 const d = dir(aliens[i].position,cam.position);
-                //console.log(d);
                 aliens[i].position.x += d.x * alienSpd;
                 aliens[i].position.z += d.z * alienSpd;
+                mixers[i].update(clocks[i].getDelta()*mixers[i].timeScale);
             }
             else{
                 damage();
@@ -225,11 +235,10 @@ function doubleTap(){
     //console.log('logged a doubleTap');
     let camDir = new THREE.Vector3();
     let bullet = new THREE.Mesh(ball,redMat);
-    cam.getWorldDirection(camDir);
+    cam.getWorldDirection(camDir).multiplyScalar(0.2);
     bullet.position.x = camDir.x;
     bullet.position.y = camHeight;
     bullet.position.z = camDir.z;
-    //console.log(bullet.position);
     scene.add(bullet);
     balls.push(bullet);
 }
@@ -306,17 +315,26 @@ function spawnSpawners(n){
 }
 
 function spawnAlien(){
-    const alienSpt = new THREE.Sprite(alienMat);
-    let alienPos = new THREE.Vector3();
-    spawners[activeSpawner].getWorldPosition(alienPos);
-    alienSpt.position.x = alienPos.x;
-    alienSpt.position.z = alienPos.z;
-    alienSpt.position.y = alienPos.y;
-
-    new THREE.Box3().setFromObject(alienSpt).getSize(alienSize);
-
-    scene.add(alienSpt);
-    aliens.push(alienSpt);
+    gLoader.load(alienMod,(o)=>{
+        const obj = o.scene;
+        let alienPos = new THREE.Vector3();
+        spawners[activeSpawner].getWorldPosition(alienPos);
+        obj.position.x = alienPos.x;
+        obj.position.z = alienPos.z;
+        obj.position.y = alienPos.y;
+        obj.scale.x = alienScale;
+        obj.scale.y = alienScale;
+        obj.scale.z = alienScale;
+        obj.lookAt(cam.position);
+        new THREE.Box3().setFromObject(obj).getSize(alienSize);
+        scene.add(obj);
+        aliens.push(obj);
+        const mixer = new THREE.AnimationMixer(obj);
+        const action = mixer.clipAction(o.animations[0]);
+        action.play();
+        mixers.push(mixer);
+        clocks.push(new THREE.Clock());
+    });
 }
 
 function chooseSpawn(n=-1){
@@ -327,7 +345,7 @@ function chooseSpawn(n=-1){
     }
 }
 
-function setDecoration(ob,n,scale,yOff=0.5){
+function setDecoration(ob,n,scale,yOff=0.5,finish=false){
     for(let i = 0; i < n; i++){
         gLoader.load(ob,function(o){
             const obj = o.scene;
@@ -350,7 +368,7 @@ function setDecoration(ob,n,scale,yOff=0.5){
                 scene.add(obj);
                 scenery.push(obj);
             }
-        },undefined,(e)=>{console.error(e);});
+        },()=>{if(finish){cenText.innerText = '';}else{cenText.innerText = 'LOADING... models';}},(e)=>{console.error(e);});
     }
 }
 
@@ -386,6 +404,20 @@ function setHP(hp){
 
 function death(){
     rgbPass.uniforms['amount'].value = 0.1;
+    cenText.innerText = 'GAME OVER';
     comp.render();
-    console.log('GAME OVER');
 }
+
+window.addEventListener('resize',()=>{
+    if(window.innerHeight > window.innerWidth/ratio){
+        comp.setSize(window.innerHeight*ratio,window.innerHeight);
+        rend.setSize(window.innerHeight*ratio,window.innerHeight);
+    }
+    else if(window.innerWidth < window.innerHeight*ratio){
+        comp.setSize(window.innerWidth,window.innerWidth/ratio);
+        rend.setSize(window.innerWidth,window.innerWidth/ratio);
+    }else{
+        comp.setSize(window.innerWidth,window.innerHeight);
+        rend.setSize(window.innerWidth,window.innerHeight);
+    }
+});
