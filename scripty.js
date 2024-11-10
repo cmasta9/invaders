@@ -20,6 +20,8 @@ const cenText = document.getElementById('center');
 
 cenText.innerText = 'LOADING...';
 
+let loadProg = 0;
+
 const stageDim = 54;
 const scene = new THREE.Scene();
 const cam = new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,stageDim/2+1);
@@ -68,6 +70,10 @@ let dmg = false;
 let activeSpawner = 0;
 let ufoSleep = null;
 
+const pumps = 42;
+const jackOs = 22;
+const corns = 1111;
+
 const balls = [];
 const aliens = [];
 const mixers = [];
@@ -112,14 +118,12 @@ gLoader.load(ufo,function(o){
     ufoObj.position.x = spawnDist;
     ufoObj.position.z = 0;
     scene.add(ufoObj);
-},()=>{cenText.innerText = 'LOADING... ufo done';});
-
-console.log(ufoObj);
+},()=>{if(ufoObj){cenText.innerText = '';}else{cenText.innerText = 'LOADING... ufo done'};});
 
 spawnSpawners(numSpawners);
-setDecoration(pumpkin,42,[0.22,0.22,0.22],0.46);
-setDecoration(jackO,12,[0.22,0.22,0.22],0.46);
-setDecoration(corn,1111,[1,1.2,1],0.2,true);
+setDecoration(pumpkin,pumps,[0.22,0.22,0.22],0.46);
+setDecoration(jackO,jackOs,[0.22,0.22,0.22],0.46);
+setDecoration(corn,corns,[1,1.2,1],0.2,true);
 const alienSize = new THREE.Vector3();
 chooseSpawn();
 comp.render();
@@ -345,7 +349,7 @@ function chooseSpawn(n=-1){
     }
 }
 
-function setDecoration(ob,n,scale,yOff=0.5,finish=false){
+function setDecoration(ob,n,scale,yOff=0.5){
     for(let i = 0; i < n; i++){
         gLoader.load(ob,function(o){
             const obj = o.scene;
@@ -368,7 +372,14 @@ function setDecoration(ob,n,scale,yOff=0.5,finish=false){
                 scene.add(obj);
                 scenery.push(obj);
             }
-        },()=>{if(finish){cenText.innerText = '';}else{cenText.innerText = 'LOADING... models';}},(e)=>{console.error(e);});
+        },()=>{
+            if(loadProg >= jackOs+pumps+corns){
+                cenText.innerText = '';
+            }else{
+                cenText.innerText = `LOADED... ${loadProg}/${jackOs+pumps+corns} models`;
+            }
+        },(e)=>{console.error(e);});
+        loadProg++;
     }
 }
 
