@@ -27,13 +27,18 @@ body{
     top: 69px;
 }
 
+#lastPts{
+    left:80%;
+    top: 69px;
+}
+
 #HP{
     left: 20px;
     top: 20px;
 }
 
 #center{
-    left:40%;
+    left:36%;
     top:40%;
     text-align: center;
     font-size: 69px;

@@ -6,7 +6,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-const bgImg = './graphics/galaxyLoop.png';
+const bgImg = './graphics/galaxyLoop.jpg';
 const groundTex = './graphics/groundTex.jpg';
 const alienMod = './graphics/alien2.glb';
 const pumpkin = './graphics/pumpkin.glb';
@@ -17,20 +17,26 @@ const ufo = './graphics/ufo.glb';
 const bgMusic = './sound/otherworldly_3.ogg';
 const shoot = './sound/SE_magicShoot.mp3';
 const boom = './sound/SE_magicExplode3.mp3';
+const hit = './sound/damage.mp3';
 
 const pointsHUD = document.getElementById('points');
 const hpHUD = document.getElementById('HP');
 const cenText = document.getElementById('center');
+const lastPts = document.getElementById('lastPts');
 
 const music = document.createElement("AUDIO");
 const seShoot = document.createElement("AUDIO");
 const seHit = document.createElement("AUDIO");
+const damn = document.createElement("AUDIO");
+music.loop = true;
 seShoot.loop = false;
 seHit.loop = false;
+damn.loop = false;
 seShoot.src = shoot;
 seHit.src = boom;
+damn.src = hit;
 music.src = bgMusic;
-music.loop = true;
+seShoot.volume = 0.5;
 
 let start = false;
 
@@ -102,6 +108,8 @@ let dmg = false;
 let activeSpawner = 0;
 let ufoSleep = null;
 
+let reset = undefined;
+
 const pumps = 42;
 const jackOs = 22;
 const corns = 1111;
@@ -121,12 +129,10 @@ const redMat = new THREE.MeshLambertMaterial({color: 0xaa0000});
 const groundMat = new THREE.MeshLambertMaterial({map: gTex});
 const spaceMat = new THREE.MeshBasicMaterial({map: bgTex, side: THREE.DoubleSide});
 
-//SET STATE
-
+let gameOver = false;
+let ufoObj = null;
 let hp = maxHP;
 let points = 0;
-hpHUD.innerHTML = setHP(hp);
-pointsHUD.innerText = `Points: ${points}`;
 
 const dome = new THREE.OctahedronGeometry(stageDim/2,2);
 const sky = new THREE.Mesh(dome,spaceMat);
@@ -141,8 +147,6 @@ scene.fog = new THREE.Fog(0xaaaaaa,1,stageDim-6);
 
 cam.position.y = ground.position.y + camHeight;
 
-let ufoObj = null;
-
 gLoader.load(ufo,function(o){
     ufoObj = o.scene;
     ufoObj.position.y = ufoHeight;
@@ -156,6 +160,10 @@ setDecoration(pumpkin,pumps,[0.22,0.22,0.22],0.46);
 setDecoration(jackO,jackOs,[0.22,0.22,0.22],0.46);
 setDecoration(corn,corns,[1,1.2,1],0.2,true);
 chooseSpawn();
+
+//---------------------------- GAME LOOP -----------------------------//
+
+initPlayer();
 comp.render();
 rend.setAnimationLoop(anim);
 
@@ -180,13 +188,22 @@ function anim(){
             comp.render();
         }
     }else if(!pause){
-        if(loadProg >= pumps+jackOs+corns){
-            cenText.innerText = 'CLICK TO START';
-        }else if(loadProg < pumps+jackOs+corn){
-            cenText.innerText = `${loadProg}/${pumps+jackOs+corn}`;
+        if(!gameOver){
+            if(loadProg >= pumps+jackOs+corns){
+                cenText.innerText = 'CLICK TO START';
+            }else if(loadProg < pumps+jackOs+corn){
+                cenText.innerText = `${loadProg}/${pumps+jackOs+corn}`;
+            }
+            comp.render();
         }
-        comp.render();
     }
+}
+
+function initPlayer(){
+    hp = maxHP;
+    points = 0;
+    hpHUD.innerHTML = setHP(hp);
+    pointsHUD.innerText = `Points: ${points}`;
 }
 
 function moveUFO(){
@@ -255,7 +272,9 @@ function moveAliens(dt){
                 mixers[i].update(dt);
             }
             else{
-                damage();
+                if(!gameOver && start){
+                    damage();
+                }
             }
         }
     }
@@ -336,8 +355,13 @@ window.addEventListener('click',(e)=>{
         clearTimeout(tapCounter);
         tapCounter = undefined;
     }else{
-        if(!start){
+        if(!start && !gameOver){
             startGame();
+        }else if(gameOver){
+            removeEnemies();
+            gameOver = false;
+            cenText.innerText = 'CLICK TO START';
+            comp.render();
         }else{
             tapCounter = setTimeout(()=>{
                 clearTimeout(tapCounter);
@@ -354,8 +378,13 @@ window.addEventListener('touchstart',(e)=>{
         clearTimeout(tapCounter);
         tapCounter = undefined;
     }else{
-        if(!start){
+        if(!start && !gameOver){
             startGame();
+        }else if(gameOver){
+            removeEnemies();
+            gameOver = false;
+            cenText.innerText = 'CLICK TO START';
+            comp.render();
         }else{
             tapCounter = setTimeout(()=>{
                 clearTimeout(tapCounter);
@@ -488,6 +517,7 @@ function explode(p){
 function damage(){
     if(!dmg){
         dmg = true;
+        damn.play();
         hp--;
         hpHUD.innerHTML = setHP(hp);
         comp.addPass(rgbPass);
@@ -507,17 +537,33 @@ function setHP(hp){
 }
 
 function death(){
-    fadeOut(music,3,0);
-    rgbPass.uniforms['amount'].value = 0.1;
-    cenText.innerText = 'GAME OVER';
-    comp.render();
+    if(!gameOver && start){
+        start = false;
+        fadeOut(music,3,0);
+        rgbPass.uniforms['amount'].value = 0.1;
+        lastPts.innerText = `Last: ${points}`;
+        cenText.innerText = 'GAME OVER';
+        gameOver = true;
+        comp.render();
+    }
 }
 
 function startGame(){
+    initPlayer();
+    comp.removePass(rgbPass);
     cenText.innerText = '';
     start = true;
     pause = false;
     fadeIn(music,1,1);
+}
+
+function removeEnemies(){
+    while(aliens.length > 0){
+        const al = aliens.pop();
+        const mix = mixers.pop();
+        scene.remove(al);
+        scene.remove(mix);
+    }
 }
 
 function fadeIn(a,t,v){
@@ -539,7 +585,7 @@ function fadeIn(a,t,v){
 function fadeOut(a,t,v){
     const diff = a.volume - v;
     const fade = setInterval(()=>{
-        if(a.volume <= v){
+        if(a.volume <= v || start){
             clearInterval(fade);
         }else{
             try{
