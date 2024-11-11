@@ -7,15 +7,30 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const bgImg = './graphics/galaxyLoop.png';
+const groundTex = './graphics/groundTex.jpg';
 const alienMod = './graphics/alien2.glb';
 const pumpkin = './graphics/pumpkin.glb';
 const jackO = './graphics/jackO.glb';
 const corn = './graphics/cornStalk.glb';
 const ufo = './graphics/ufo.glb';
 
+const bgMusic = './sound/otherworldly_3.ogg';
+const shoot = './sound/SE_magicShoot.mp3';
+const boom = './sound/SE_magicExplode3.mp3';
+
 const pointsHUD = document.getElementById('points');
 const hpHUD = document.getElementById('HP');
 const cenText = document.getElementById('center');
+
+const music = document.createElement("AUDIO");
+const seShoot = document.createElement("AUDIO");
+const seHit = document.createElement("AUDIO");
+seShoot.loop = false;
+seHit.loop = false;
+seShoot.src = shoot;
+seHit.src = boom;
+music.src = bgMusic;
+music.loop = true;
 
 cenText.innerText = 'LOADING...';
 
@@ -27,6 +42,10 @@ const cam = new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,
 const tLoader = new THREE.TextureLoader();
 const gLoader = new GLTFLoader();
 const bgTex = tLoader.load(bgImg);
+const gTex = tLoader.load(groundTex);
+gTex.wrapS = THREE.RepeatWrapping;
+gTex.wrapT = THREE.RepeatWrapping;
+gTex.repeat.set(stageDim/4,stageDim/4);
 bgTex.colorSpace = THREE.SRGBColorSpace;
 
 const explosion = [];
@@ -93,12 +112,11 @@ const scenery = [];
 
 let dTime = 0;
 
-const box = new THREE.BoxGeometry(1,1,1);
 const ball = new THREE.SphereGeometry(bulletRad,4,4);
 const planeG = new THREE.PlaneGeometry(stageDim,stageDim);
 
-const redMat = new THREE.MeshBasicMaterial({color: 0xaa0000});
-const groundMat = new THREE.MeshPhongMaterial({color: 0xaa6900});
+const redMat = new THREE.MeshLambertMaterial({color: 0xaa0000});
+const groundMat = new THREE.MeshLambertMaterial({map: gTex});
 const spaceMat = new THREE.MeshBasicMaterial({map: bgTex, side: THREE.DoubleSide});
 
 //SET STATE
@@ -107,17 +125,18 @@ let hp = maxHP;
 let points = 0;
 hpHUD.innerHTML = setHP(hp);
 pointsHUD.innerText = `Points: ${points}`;
+music.play();
 
 const dome = new THREE.OctahedronGeometry(stageDim/2,2);
 const sky = new THREE.Mesh(dome,spaceMat);
-const light = new THREE.DirectionalLight(0xffffff,1);
+const light = new THREE.DirectionalLight(0xffffff,0.3);
 const ground = new THREE.Mesh(planeG,groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.position.y = 0;
 scene.add(ground);
 scene.add(light);
 scene.add(sky);
-scene.fog = new THREE.Fog(0xaaaaaa,1,stageDim);
+scene.fog = new THREE.Fog(0xaaaaaa,1,stageDim-6);
 
 cam.position.y = ground.position.y + camHeight;
 
@@ -252,14 +271,17 @@ function dir(i,f){
 
 function doubleTap(){
     //console.log('logged a doubleTap');
-    let camDir = new THREE.Vector3();
-    let bullet = new THREE.Mesh(ball,redMat);
-    cam.getWorldDirection(camDir).multiplyScalar(0.2);
-    bullet.position.x = camDir.x;
-    bullet.position.y = camHeight;
-    bullet.position.z = camDir.z;
-    scene.add(bullet);
-    balls.push(bullet);
+    if(!pause){
+        seShoot.play();
+        let camDir = new THREE.Vector3();
+        let bullet = new THREE.Mesh(ball,redMat);
+        cam.getWorldDirection(camDir).multiplyScalar(0.2);
+        bullet.position.x = camDir.x;
+        bullet.position.y = camHeight;
+        bullet.position.z = camDir.z;
+        scene.add(bullet);
+        balls.push(bullet);
+    }
 }
 
 window.addEventListener('keydown', (k)=>{
@@ -439,6 +461,9 @@ function explode(p){
     scene.add(exp);
     const exploder = window.setInterval(()=>{
         if(mat < explosion.length){
+            if(mat == 2){
+                seHit.play();
+            }
             exp.material = new THREE.SpriteMaterial({map: explosion[mat]});
             mat++;
         }else{
