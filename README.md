@@ -7,6 +7,6 @@ The game is still unfinished at this time.
 
 Click and drag to rotate the camera. Double-click to shoot a low-poly ball at the aliens. Reload to try again on game over.
 
-[Live on the web](invaders-three.vercel.app)
+[Live on the web](https://invaders-three.vercel.app)
 
 Now also mobile-friendly :)
