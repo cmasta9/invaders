@@ -29,6 +29,7 @@ const seShoot = document.createElement("AUDIO");
 const seHit = document.createElement("AUDIO");
 const damn = document.createElement("AUDIO");
 music.loop = true;
+music.muted = true;
 seShoot.loop = false;
 seHit.loop = false;
 damn.loop = false;
@@ -569,6 +570,7 @@ function removeEnemies(){
 function fadeIn(a,t,v){
     a.volume = 0;
     a.play();
+    a.muted = false;
     const fade = setInterval(()=>{
         if(a.volume >= v){
             clearInterval(fade);
