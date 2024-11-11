@@ -273,7 +273,7 @@ window.addEventListener('mousedown',()=>{
 });
 
 window.addEventListener('touchstart',(e)=>{
-    cenText.innerText = 'touchstart';
+    e.preventDefault();
     mouseDown = true;
     touchX = e.touches[0].clientX;
 });
@@ -283,7 +283,7 @@ window.addEventListener('mouseup',()=>{
 });
 
 window.addEventListener('touchend',()=>{
-    cenText.innerText = 'touchend';
+    e.preventDefault();
     mouseDown = false;
 });
 
@@ -301,6 +301,7 @@ window.addEventListener('click',()=>{
 });
 
 window.addEventListener('touchstart',()=>{
+    e.preventDefault();
     if(tapCounter){
         doubleTap();
         clearTimeout(tapCounter);
@@ -320,8 +321,9 @@ window.addEventListener('mousemove',(e)=>{
 });
 
 window.addEventListener('touchmove',(e)=>{
+    e.preventDefault();
     if(mouseDown){
-        cenText.innerText = `${e.touches[0].clientX},${touchX-e.touches[0].clientX}`;
+        //cenText.innerText = `${e.touches[0].clientX},${touchX-e.touches[0].clientX}`;
         cam.rotation.y += (touchX-Number(e.touches[0].clientX)) * spd;
         touchX = e.touches[0].clientX;
     }

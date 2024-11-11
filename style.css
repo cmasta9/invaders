@@ -3,6 +3,7 @@ body{
     position: fixed;
     margin:auto;
     height:100%;
+    touch-action: manipulation;
 }
 
 #canv{
