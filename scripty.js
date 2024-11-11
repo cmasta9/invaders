@@ -6,7 +6,6 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-const alienImg = './graphics/alien.png';
 const bgImg = './graphics/galaxyLoop.png';
 const alienMod = './graphics/alien2.glb';
 const pumpkin = './graphics/pumpkin.glb';
@@ -28,8 +27,14 @@ const cam = new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,
 const tLoader = new THREE.TextureLoader();
 const gLoader = new GLTFLoader();
 const bgTex = tLoader.load(bgImg);
-const alienMap = tLoader.load(alienImg);
 bgTex.colorSpace = THREE.SRGBColorSpace;
+
+const explosion = [];
+for(let i = 0; i < 6; i++){
+    const exp = tLoader.load(`./graphics/explode${i}.png`);
+    exp.colorSpace = THREE.SRGBColorSpace;
+    explosion.push(exp);
+}
 
 const rend = new THREE.WebGLRenderer();
 const comp = new EffectComposer(rend);
@@ -53,6 +58,11 @@ let ufoSpd = 0.19;
 let ufoSleepTime = 2;
 let alienScale = 0.5;
 let damgDist = 0.8;
+let alienSize = new THREE.Vector3();
+let alienBox = new THREE.Box3();
+let ballBox = new THREE.Box3();
+const hitBoxComp = -0.2;
+const explodeTime = 0.69;
 
 const camHeight = 0.54;
 const spawnDist = stageDim*2/5;
@@ -64,7 +74,6 @@ let touchX = '';
 
 let pause = false;
 let mouseDown = false;
-let clicked = false;
 const doubleTapThresh = 0.42;
 let tapCounter = undefined;
 let dmgCD = 2.5;
@@ -88,7 +97,6 @@ const box = new THREE.BoxGeometry(1,1,1);
 const ball = new THREE.SphereGeometry(bulletRad,4,4);
 const planeG = new THREE.PlaneGeometry(stageDim,stageDim);
 
-const alienMat = new THREE.SpriteMaterial( {map : alienMap} );
 const redMat = new THREE.MeshBasicMaterial({color: 0xaa0000});
 const groundMat = new THREE.MeshPhongMaterial({color: 0xaa6900});
 const spaceMat = new THREE.MeshBasicMaterial({map: bgTex, side: THREE.DoubleSide});
@@ -121,13 +129,12 @@ gLoader.load(ufo,function(o){
     ufoObj.position.x = spawnDist;
     ufoObj.position.z = 0;
     scene.add(ufoObj);
-},()=>{if(ufoObj){cenText.innerText = '';}else{cenText.innerText = 'LOADING... ufo done'};});
+},()=>{if(ufoObj){cenText.innerText = '';}});
 
 spawnSpawners(numSpawners);
 setDecoration(pumpkin,pumps,[0.22,0.22,0.22],0.46);
 setDecoration(jackO,jackOs,[0.22,0.22,0.22],0.46);
 setDecoration(corn,corns,[1,1.2,1],0.2,true);
-const alienSize = new THREE.Vector3();
 chooseSpawn();
 comp.render();
 rend.setAnimationLoop(anim);
@@ -186,17 +193,22 @@ function moveBalls(){
 
         for(let a = 0; a < aliens.length; a++){
             if(aliens[a]){
-                const alienBox = new THREE.Box3().setFromObject(aliens[a]);
                 if(balls[i]){
-                    if(new THREE.Box3().setFromObject(balls[i]).intersectsBox(alienBox)){
+                    alienBox.setFromObject(aliens[a]);
+                    alienBox.expandByScalar(hitBoxComp);
+                    if(ballBox.setFromObject(balls[i]).intersectsBox(alienBox)){
                         scene.remove(balls[i]);
-                        scene.remove(aliens[a]);
                         balls.splice(i,1);
+                        const al = aliens[a];
+                        explode(al.position);
                         aliens.splice(a,1);
                         mixers.splice(a,1);
-                        points++;
+                        window.setTimeout(()=>{
+                            scene.remove(al);
+                            points++;
+                            pointsHUD.innerText = `Points: ${points}`;
+                        },explodeTime/2*1000);
                         //console.log(`hit! ${points}`);
-                        pointsHUD.innerText = `Points: ${points}`;
                     }
                 }
             }
@@ -383,11 +395,11 @@ function setDecoration(ob,n,scale,yOff=0.5){
             obj.scale.y = scale[1];
             obj.scale.z = scale[2];
             obj.rotation.y = Math.random() * 2 * Math.PI;
-            obj.position.x = Math.random() * 30 + 0.5;
+            obj.position.x = Math.random() * (stageDim/2-1) + 0.5;
             if(Math.round(Math.random()) < 1){
                 obj.position.x = -obj.position.x;
             }
-            obj.position.z = Math.random() * 30 + 0.5;
+            obj.position.z = Math.random() * (stageDim/2-1) + 0.5;
             if(Math.round(Math.random()) < 1){
                 obj.position.z = -obj.position.z;
             }
@@ -416,6 +428,24 @@ function sceneryCollide(o,t){
         }
     }
     return false;
+}
+
+function explode(p){
+    const exp = new THREE.Sprite(new THREE.SpriteMaterial({map: explosion[0]}));
+    exp.position.x = p.x;
+    exp.position.y = p.y;
+    exp.position.z = p.z;
+    let mat = 0
+    scene.add(exp);
+    const exploder = window.setInterval(()=>{
+        if(mat < explosion.length){
+            exp.material = new THREE.SpriteMaterial({map: explosion[mat]});
+            mat++;
+        }else{
+            scene.remove(exp);
+            window.clearInterval(exploder);
+        }
+    },explodeTime/explosion.length*1000);
 }
 
 function damage(){
