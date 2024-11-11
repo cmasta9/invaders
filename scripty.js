@@ -32,6 +32,8 @@ seHit.src = boom;
 music.src = bgMusic;
 music.loop = true;
 
+let start = false;
+
 cenText.innerText = 'LOADING...';
 
 let loadProg = 0;
@@ -125,7 +127,6 @@ let hp = maxHP;
 let points = 0;
 hpHUD.innerHTML = setHP(hp);
 pointsHUD.innerText = `Points: ${points}`;
-music.play();
 
 const dome = new THREE.OctahedronGeometry(stageDim/2,2);
 const sky = new THREE.Mesh(dome,spaceMat);
@@ -148,7 +149,7 @@ gLoader.load(ufo,function(o){
     ufoObj.position.x = spawnDist;
     ufoObj.position.z = 0;
     scene.add(ufoObj);
-},()=>{if(ufoObj){cenText.innerText = '';}});
+});
 
 spawnSpawners(numSpawners);
 setDecoration(pumpkin,pumps,[0.22,0.22,0.22],0.46);
@@ -160,7 +161,7 @@ rend.setAnimationLoop(anim);
 
 function anim(){
 
-    if(!pause){
+    if(!pause && start){
         if(hp<1){
             pause = true;
             death();
@@ -178,6 +179,13 @@ function anim(){
             cam.rotation.y += input[0]*spd;
             comp.render();
         }
+    }else if(!pause){
+        if(loadProg >= pumps+jackOs+corns){
+            cenText.innerText = 'CLICK TO START';
+        }else if(loadProg < pumps+jackOs+corn){
+            cenText.innerText = `${loadProg}/${pumps+jackOs+corn}`;
+        }
+        comp.render();
     }
 }
 
@@ -301,7 +309,8 @@ window.addEventListener('keyup',(k)=>{
     }
 });
 
-window.addEventListener('mousedown',()=>{
+window.addEventListener('mousedown',(e)=>{
+    e.preventDefault();
     mouseDown = true;
 });
 
@@ -315,35 +324,44 @@ window.addEventListener('mouseup',()=>{
     mouseDown = false;
 });
 
-window.addEventListener('touchend',()=>{
+window.addEventListener('touchend',(e)=>{
     e.preventDefault();
     mouseDown = false;
 });
 
-window.addEventListener('click',()=>{
-    if(tapCounter){
-        doubleTap();
-        clearTimeout(tapCounter);
-        tapCounter = undefined;
-    }else{
-        tapCounter = setTimeout(()=>{
-            clearTimeout(tapCounter);
-            tapCounter = undefined;
-        },doubleTapThresh*1000);
-    }
-});
-
-window.addEventListener('touchstart',()=>{
+window.addEventListener('click',(e)=>{
     e.preventDefault();
     if(tapCounter){
         doubleTap();
         clearTimeout(tapCounter);
         tapCounter = undefined;
     }else{
-        tapCounter = setTimeout(()=>{
-            clearTimeout(tapCounter);
-            tapCounter = undefined;
-        },doubleTapThresh*1000);
+        if(!start){
+            startGame();
+        }else{
+            tapCounter = setTimeout(()=>{
+                clearTimeout(tapCounter);
+                tapCounter = undefined;
+            },doubleTapThresh*1000);
+        }
+    }
+});
+
+window.addEventListener('touchstart',(e)=>{
+    e.preventDefault();
+    if(tapCounter){
+        doubleTap();
+        clearTimeout(tapCounter);
+        tapCounter = undefined;
+    }else{
+        if(!start){
+            startGame();
+        }else{
+            tapCounter = setTimeout(()=>{
+                clearTimeout(tapCounter);
+                tapCounter = undefined;
+            },doubleTapThresh*1000);
+        }
     }
 });
 
@@ -432,14 +450,8 @@ function setDecoration(ob,n,scale,yOff=0.5){
                 scene.add(obj);
                 scenery.push(obj);
             }
-        },()=>{
-            if(loadProg >= jackOs+pumps+corns){
-                cenText.innerText = '';
-            }else{
-                cenText.innerText = `LOADED... ${loadProg}/${jackOs+pumps+corns} models`;
-            }
-        },(e)=>{console.error(e);});
-        loadProg++;
+            loadProg++;
+        },undefined,(e)=>{console.error(e);});
     }
 }
 
@@ -495,9 +507,48 @@ function setHP(hp){
 }
 
 function death(){
+    fadeOut(music,3,0);
     rgbPass.uniforms['amount'].value = 0.1;
     cenText.innerText = 'GAME OVER';
     comp.render();
+}
+
+function startGame(){
+    cenText.innerText = '';
+    start = true;
+    pause = false;
+    fadeIn(music,1,1);
+}
+
+function fadeIn(a,t,v){
+    a.volume = 0;
+    a.play();
+    const fade = setInterval(()=>{
+        if(a.volume >= v){
+            clearInterval(fade);
+        }else{
+            try{
+                a.volume += v/10;
+            }catch{
+                a.volume = 1;
+            }
+        }
+    },t/10*1000);
+}
+
+function fadeOut(a,t,v){
+    const diff = a.volume - v;
+    const fade = setInterval(()=>{
+        if(a.volume <= v){
+            clearInterval(fade);
+        }else{
+            try{
+                a.volume -= diff/10;
+            }catch{
+                a.volume = 0;
+            }
+        }
+    },t/10*1000);
 }
 
 window.addEventListener('resize',()=>{
