@@ -194,7 +194,6 @@ function moveBalls(){
                         balls.splice(i,1);
                         aliens.splice(a,1);
                         mixers.splice(a,1);
-                        clocks.splice(a,1);
                         points++;
                         //console.log(`hit! ${points}`);
                         pointsHUD.innerText = `Points: ${points}`;
