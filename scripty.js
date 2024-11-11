@@ -273,6 +273,7 @@ window.addEventListener('mousedown',()=>{
 });
 
 window.addEventListener('touchstart',(e)=>{
+    cenText.innerText = 'touchstart';
     mouseDown = true;
     touchX = Number(e.touchX);
 });
@@ -282,6 +283,7 @@ window.addEventListener('mouseup',()=>{
 });
 
 window.addEventListener('touchend',()=>{
+    cenText.innerText = 'touchend';
     mouseDown = false;
 });
 
@@ -319,6 +321,7 @@ window.addEventListener('mousemove',(e)=>{
 
 window.addEventListener('touchmove',(e)=>{
     if(mouseDown){
+        cenText.innerText = `${e.touchX},${touchX-Number(e.touchX)}`;
         cam.rotation.y += (touchX-Number(e.touchX)) * spd;
         touchX = Number(e.touchX);
     }
