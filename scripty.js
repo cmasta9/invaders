@@ -275,7 +275,7 @@ window.addEventListener('mousedown',()=>{
 window.addEventListener('touchstart',(e)=>{
     cenText.innerText = 'touchstart';
     mouseDown = true;
-    touchX = Number(e.touchX);
+    touchX = e.touches[0].clientX;
 });
 
 window.addEventListener('mouseup',()=>{
@@ -321,9 +321,9 @@ window.addEventListener('mousemove',(e)=>{
 
 window.addEventListener('touchmove',(e)=>{
     if(mouseDown){
-        cenText.innerText = `${e.touchX},${touchX-Number(e.touchX)}`;
-        cam.rotation.y += (touchX-Number(e.touchX)) * spd;
-        touchX = Number(e.touchX);
+        cenText.innerText = `${e.touches[0].clientX},${touchX-e.touches[0].clientX}`;
+        cam.rotation.y += (touchX-Number(e.touches[0].clientX)) * spd;
+        touchX = e.touches[0].clientX;
     }
 })
 
