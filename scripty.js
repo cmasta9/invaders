@@ -14,7 +14,7 @@ const jackO = './graphics/jackO.glb';
 const corn = './graphics/cornStalk.glb';
 const ufo = './graphics/ufo.glb';
 
-const bgMusic = './sound/otherworldly_3.ogg';
+const bgMusic = './sound/otherworldly_4.ogg';
 const shoot = './sound/SE_magicShoot.mp3';
 const boom = './sound/SE_magicExplode3.mp3';
 const hit = './sound/damage.mp3';
@@ -80,10 +80,10 @@ const maxHP = 5;
 let input = [0,0];
 let spd = 0.01;
 let shootSpd = 0.05;
-let alienSpd = 0.01;
 let fallSpd = 0.05;
-let ufoSpd = 0.19;
-let ufoSleepTime = 2;
+const alienSpdInit = 0.01;
+const ufoSpdInit = 0.19;
+const ufoSleepTimeInit = 2;
 let alienScale = 0.5;
 let damgDist = 0.8;
 let alienSize = new THREE.Vector3();
@@ -91,6 +91,10 @@ let alienBox = new THREE.Box3();
 let ballBox = new THREE.Box3();
 const hitBoxComp = -0.2;
 const explodeTime = 0.69;
+
+let alienSpd = alienSpdInit;
+let ufoSpd = ufoSpdInit;
+let ufoSleepTime = ufoSleepTimeInit;
 
 const camHeight = 0.54;
 const spawnDist = stageDim*2/5;
@@ -164,7 +168,7 @@ chooseSpawn();
 
 //---------------------------- GAME LOOP -----------------------------//
 
-initPlayer();
+initGame();
 comp.render();
 rend.setAnimationLoop(anim);
 
@@ -200,11 +204,26 @@ function anim(){
     }
 }
 
-function initPlayer(){
+function initGame(){
     hp = maxHP;
     points = 0;
     hpHUD.innerHTML = setHP(hp);
     pointsHUD.innerText = `Points: ${points}`;
+    alienSpd = alienSpdInit;
+    ufoSpd = ufoSpdInit;
+    ufoSleepTime = ufoSleepTimeInit;
+}
+
+function setDifficulty(){
+    if(points%25 == 0){
+        alienSpd += 0.01;
+    }
+    if(points%5 == 0 && ufoSleepTime > ufoSleepTimeInit/2){
+        ufoSleepTime -= 0.01;
+    }
+    if(points%10 == 0){
+        ufoSpd += 0.01;
+    }
 }
 
 function moveUFO(){
@@ -252,6 +271,7 @@ function moveBalls(){
                             scene.remove(al);
                             points++;
                             pointsHUD.innerText = `Points: ${points}`;
+                            setDifficulty();
                         },explodeTime/2*1000);
                         //console.log(`hit! ${points}`);
                     }
@@ -550,7 +570,7 @@ function death(){
 }
 
 function startGame(){
-    initPlayer();
+    initGame();
     comp.removePass(rgbPass);
     cenText.innerText = '';
     start = true;
