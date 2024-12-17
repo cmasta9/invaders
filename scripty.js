@@ -620,15 +620,8 @@ function fadeOut(a,t,v){
 }
 
 window.addEventListener('resize',()=>{
-    if(window.innerHeight > window.innerWidth/ratio){
-        comp.setSize(window.innerHeight*ratio,window.innerHeight);
-        rend.setSize(window.innerHeight*ratio,window.innerHeight);
-    }
-    else if(window.innerWidth < window.innerHeight*ratio){
-        comp.setSize(window.innerWidth,window.innerWidth/ratio);
-        rend.setSize(window.innerWidth,window.innerWidth/ratio);
-    }else{
-        comp.setSize(window.innerWidth,window.innerHeight);
-        rend.setSize(window.innerWidth,window.innerHeight);
-    }
+    cam.aspect = window.innerWidth/window.innerHeight;
+    cam.updateProjectionMatrix();
+    rend.setSize(window.innerWidth,window.innerHeight);
+    comp.setSize(window.innerWidth,window.innerHeight);
 });
